@@ -8,13 +8,13 @@
           <label for="username">用户名：</label>
           <input id="username" v-model="username" type="text" autocomplete="username" />
         </div>
+        <div v-if="showRepeatPassword">
+          <label for="email">邮箱：</label>
+          <input id="email" v-model="email" type="email" autocomplete="email" />
+        </div>
         <div>
           <label for="password">密码：</label>
           <input id="password" v-model="password" type="password" autocomplete="current-password" />
-        </div>
-        <div>
-          <label for="email">邮箱：</label>
-          <input id="email" v-model="email" type="email" autocomplete="email" />
         </div>
         <div v-if="showRepeatPassword">
           <label for="repeatPassword">再次输入密码：</label>
@@ -54,10 +54,10 @@ const handleRegister = () => {
     alert('请输入有效的邮箱地址！');
     return;
   } else if (!validatePasswordComplexity(password.value)) {
-    alert('密码必须包含大写字母、小写字母、数字和特殊字符，长度在9到20个字符之间！');
+    alert('密码必须包含大写字母、小写字母、数字和特殊字符，长度在8到20个字符之间！');
     return;
   } else {
-    fetch(`${baseUrl}/api/register/`, {
+    fetch(`${baseUrl}/api/users/register/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -73,7 +73,7 @@ const handleRegister = () => {
           const error = await response.text();
           throw new Error(error || '注册失败');
         }
-        alert('注册成功，请登录！');
+        alert('注册成功，请打开邮件查看激活连接，激活后可刷新该页面登录');
         showRepeatPassword.value = false;
         repeatPassword.value = '';
       })
@@ -81,6 +81,36 @@ const handleRegister = () => {
         alert(`注册失败: ${error.message}`);
       });
   }
+}
+const handleLogin = () => {
+  if (username.value === '' || password.value === '') {
+    alert('用户名和密码不能为空！');
+    return;
+  }
+  fetch(`${baseUrl}/api/token/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      username: username.value,
+      password: password.value
+    })
+  })
+    .then(async response => {
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || '登录失败');
+      }
+      const data = await response.json();
+      localStorage.setItem('token', data.access);
+      localStorage.setItem('username', username.value);
+      alert('登录成功！');
+      window.location.href = '/';
+    })
+    .catch(error => {
+      alert(`登录失败: ${error.message}`);
+  })
 }
 
 function validateEmail(email: string): boolean {
