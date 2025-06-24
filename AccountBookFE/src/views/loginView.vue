@@ -1,7 +1,7 @@
 <template>
   <div class="loginView">
     <h2 class="title">这里是一个在线的自用记账本工具</h2>
-    <p class="p">您可以使用用户名和密码进行登录，如果需要注册，可以同时填写邮箱进行自助注册，或联系管理员：qbb7680@oputlook.com</p>
+    <p class="p">您可以使用用户名和密码进行登录，如果需要注册，可以点击注册按钮填写邮箱进行自助注册，或联系管理员：qbb7680@oputlook.com</p>
     <div class="login_container">
       <form>
         <div>
