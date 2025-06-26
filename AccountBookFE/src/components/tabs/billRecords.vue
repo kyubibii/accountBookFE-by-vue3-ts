@@ -106,7 +106,7 @@ const loadAccounts = async () => {
   }
 }
 const addAccount = () => {
-  const accountName = prompt('请输入新账户名称')
+  const accountName = prompt('请输入新账户名称(为保障显示效果，建议不超过4个汉字)')
   if (!accountName) return
   authFetch(`${baseUrl}/api/accounts/`, {
     method: 'POST',

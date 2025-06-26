@@ -45,7 +45,7 @@ import BillQuery from '../components/tabs/billQuery.vue'
 import Management from '../components/tabs/management.vue'
 
 const router = useRouter()
-const currentTab = ref('BillRecords')
+const currentTab = ref('BillQuery')
 
 onMounted(() => {
   const token = localStorage.getItem('refresh_token')
@@ -100,7 +100,7 @@ function logout() {
 }
 
 .tab-buttons button {
-  margin-right: 1em;
+  margin-right: 0.3em;
   padding: 0.5em 1em;
   border: none;
   background: transparent;
