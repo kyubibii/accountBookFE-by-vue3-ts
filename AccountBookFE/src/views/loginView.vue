@@ -103,7 +103,8 @@ const handleLogin = () => {
         throw new Error(error || '登录失败');
       }
       const data = await response.json();
-      localStorage.setItem('token', data.access);
+      localStorage.setItem('access_token', data.access);
+      localStorage.setItem('refresh_token', data.refresh);
       localStorage.setItem('username', username.value);
       alert('登录成功！');
       window.location.href = '/';
