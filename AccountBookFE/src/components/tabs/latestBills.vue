@@ -5,7 +5,12 @@
     <div>
       <div v-for="record in records">
         <span class="record-display">{{ record.date }} </span>
-        <span class="record-display">{{ record.name }}</span>
+        <span
+          class="record-display"
+          :style="{ color: getTagColor(record.tag),
+            textShadow: '1px 1px 4px rgba(0,0,0,0.5)'
+          }"
+        >{{ record.name }}</span>
         <span class="record-display">{{ record.amount / 100 }}元</span>
       </div>
     </div>
@@ -17,7 +22,11 @@ import { authFetch } from '@/utils/authFetch';
 import { ref, onMounted } from 'vue';
 const baseUrl = import.meta.env.VITE_API_BASE_URL
 const records = ref<{ id: number; account: number; tag: number; date: string; amount: number; name: string }[]>([])
-
+const getTagColor = (tagId: number) => {
+  const tags = JSON.parse(localStorage.getItem('tags') || '[]');
+  const tag = tags.find((t: any) => t.id === tagId);
+  return tag ? tag.color : 'black';
+}
 const loadRecords = async () => {
   const getLatestTen = (list: any[]) => list.slice().reverse().slice(0, 10);
   try {

@@ -1,8 +1,7 @@
 <template>
   <div class="billRecords">
     <div class="tag-selector">
-      <label class="tag-label">选择账户:</label>
-      <button class="add-tag" @click="loadAccounts">加载</button>
+      <button class="load-button" @click="loadAccounts">选择账户:</button>
       <span v-if="!accounts.length" class="no-accounts">当前无账户，请新建账户</span>
       <span v-for="account in accounts" :key="account.id" class="tag-option"
         :class="{ selected: selectedAccountId === account.id }" @click="selectedAccountId = account.id">
@@ -11,8 +10,7 @@
       <button class="add-tag" @click="addAccount">+</button>
     </div>
     <div class="tag-selector">
-      <label class="tag-label">选择标签:</label>
-      <button class="add-tag" @click="loadTag">加载</button>
+      <button class="load-button" @click="loadTag">选择标签:</button>
       <span v-if="!tags.length" class="no-accounts">当前无标签，请新建标签</span>
       <span v-for="tag in tags" :key="tag.id" class="tag-option" :style="{
         color: selectedTagId === tag.id ? '#FFFFFF' : tag.color,
@@ -98,6 +96,7 @@ const loadAccounts = async () => {
     })
     if (!response.ok) throw new Error('获取账户失败')
     const data = await response.json()
+    localStorage.setItem('accounts', JSON.stringify(data))
     accounts.value = data
     if (data.length > 0) {
       selectedAccountId.value = data[0].id
@@ -139,6 +138,7 @@ const loadTag = () => {
     .then(async (response) => {
       if (!response.ok) throw new Error('获取标签失败')
       const data = await response.json()
+    localStorage.setItem('tags', JSON.stringify(data))
       tags.value = data
     })
     .catch((e: any) => {
@@ -295,12 +295,30 @@ onMounted(async () => {
   user-select: none;
   color: darkslategray;
 }
+.load-button {
+  border: none;
+  background: none;
+  color: darkslategray;
+  font-weight: bold;
+  margin-right: 8px;
+  user-select: none;
+  font-size: inherit;
+  padding: 0;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+.load-button:hover {
+  cursor: pointer;
+  text-decoration: underline;
+  background-color: rgba(0, 0, 0, 0.1);
+}
 
 .tag-selector {
   margin-bottom: 16px;
   display: flex;
   align-items: center;
   gap: 0.4em;
+  flex-wrap: wrap;
 }
 
 .tag-option {
