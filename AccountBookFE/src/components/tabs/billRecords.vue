@@ -138,7 +138,7 @@ const loadTag = () => {
     .then(async (response) => {
       if (!response.ok) throw new Error('获取标签失败')
       const data = await response.json()
-    localStorage.setItem('tags', JSON.stringify(data))
+      localStorage.setItem('tags', JSON.stringify(data))
       tags.value = data
     })
     .catch((e: any) => {
@@ -295,6 +295,7 @@ onMounted(async () => {
   user-select: none;
   color: darkslategray;
 }
+
 .load-button {
   border: none;
   background: none;
@@ -307,6 +308,7 @@ onMounted(async () => {
   line-height: 1.2;
   vertical-align: middle;
 }
+
 .load-button:hover {
   cursor: pointer;
   text-decoration: underline;

@@ -11,7 +11,10 @@
             textShadow: '1px 1px 4px rgba(0,0,0,0.5)'
           }"
         >{{ record.name }}</span>
-        <span class="record-display">{{ record.amount / 100 }}元</span>
+        <span
+          class="record-display"
+          :style="{ color: record.amount < 0 ? 'red' : 'green' }"
+        >{{ record.amount / 100 }}元</span>
       </div>
     </div>
   </div>
