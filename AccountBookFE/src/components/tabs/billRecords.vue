@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, onBeforeUnmount } from 'vue';
 import { authFetch } from '@/utils/authFetch';
 import latestBills from './latestBills.vue';
 
@@ -187,10 +187,10 @@ const amount = ref<number | null>(null)
 const income0 = () => {
   if (!selectedAccountId.value || !selectedTagId.value || selectedDate === null || amount.value === null) {
     alert('请先选择账户、标签、日期和输入金额')
-    return
+    return false
   } else if (amount.value <= 0) {
     alert('金额必须大于0')
-    return
+    return false
   }
   const amount1 = amount.value * 100
   const data = {
@@ -215,16 +215,18 @@ const income0 = () => {
   }).catch((e: any) => {
     alert(e.message || '创建记录失败')
   })
+  return true
 }
+
 const income1 = () => {
-  income0()
+  if (!income0()) return
   const date = new Date(selectedDate.value)
   date.setDate(date.getDate() - 1)
   selectedDate.value = date.toISOString().split('T')[0]
   saveDate()
 }
 const income2 = () => {
-  income0()
+  if (!income0()) return
   const date = new Date(selectedDate.value)
   date.setDate(date.getDate() + 1)
   selectedDate.value = date.toISOString().split('T')[0]
@@ -233,10 +235,10 @@ const income2 = () => {
 const outcome0 = () => {
   if (!selectedAccountId.value || !selectedTagId.value || selectedDate === null || amount.value === null) {
     alert('请先选择账户、标签、日期和输入金额')
-    return
+    return false
   } else if (amount.value <= 0) {
     alert('金额必须大于0')
-    return
+    return false
   }
   const amount1 = -amount.value * 100
   const data = {
@@ -261,25 +263,59 @@ const outcome0 = () => {
   }).catch((e: any) => {
     alert(e.message || '创建记录失败')
   })
+  return true
 }
 const outcome1 = () => {
-  outcome0()
+  if (!outcome0()) return
   const date = new Date(selectedDate.value)
   date.setDate(date.getDate() - 1)
   selectedDate.value = date.toISOString().split('T')[0]
   saveDate()
 }
 const outcome2 = () => {
-  outcome0()
+  if (!outcome0()) return
   const date = new Date(selectedDate.value)
   date.setDate(date.getDate() + 1)
   selectedDate.value = date.toISOString().split('T')[0]
   saveDate()
 }
 
+// 快捷键处理
+let keyHandler: ((e: KeyboardEvent) => void) | null = null
+
 onMounted(async () => {
   await loadAccounts()
   await loadTag()
+
+  keyHandler = (e: KeyboardEvent) => {
+    if (e.ctrlKey && e.key === 'ArrowUp') {
+      if (!income0()) return
+    }
+    if (e.ctrlKey && e.key === 'ArrowDown') {
+      if (!outcome0()) return
+    }
+    if (e.ctrlKey && e.key === 'ArrowLeft') {
+      if (!outcome0()) return
+      const date = new Date(selectedDate.value)
+      date.setDate(date.getDate() - 1)
+      selectedDate.value = date.toISOString().split('T')[0]
+      saveDate()
+    }
+    if (e.ctrlKey && e.key === 'ArrowRight') {
+      if (!outcome0()) return
+      const date = new Date(selectedDate.value)
+      date.setDate(date.getDate() + 1)
+      selectedDate.value = date.toISOString().split('T')[0]
+      saveDate()
+    }
+  }
+  window.addEventListener('keydown', keyHandler)
+})
+
+onBeforeUnmount(() => {
+  if (keyHandler) {
+    window.removeEventListener('keydown', keyHandler)
+  }
 })
 </script>
 

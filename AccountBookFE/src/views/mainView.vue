@@ -45,7 +45,7 @@ import BillQuery from '../components/tabs/billQuery.vue'
 import Management from '../components/tabs/management.vue'
 
 const router = useRouter()
-const currentTab = ref('BillQuery')
+const currentTab = ref('BillRecords')
 
 onMounted(() => {
   const token = localStorage.getItem('refresh_token')
