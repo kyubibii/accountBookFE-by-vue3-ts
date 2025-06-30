@@ -36,7 +36,15 @@
     </div>
     <div class="tag-selector">
       <label class="tag-label">收支金额:</label>
-      <input type="number" v-model="amount" min="0" step="0.01" placeholder="0.00" style="width: 70%;" />
+      <input
+        type="number"
+        v-model="amount"
+        min="0"
+        step="0.01"
+        placeholder="0.00"
+        style="width: 70%;"
+        ref="amountInput"
+      />
     </div>
     <div class="tag-selector">
       <label class="tag-label">详细信息:</label>
@@ -44,24 +52,29 @@
     </div>
   </div>
   <div>
-    <button class="add-tag" @click="income1" style="width: 30%; height: 2.5em;">收入(前一天)</button>
-    <button class="add-tag" @click="income0" style="width: 30%; height: 2.5em;">收入</button>
-    <button class="add-tag" @click="income2" style="width: 30%; height: 2.5em;">收入(后一天)</button>
+    <button class="add-tag" @click="outcome1" style="width: 20%; height: 2.5em;">上一天</button>
+    <button class="add-tag" @click="income0" style="width: 20%; height: 2.5em;">收入</button>
+    <button class="add-tag" @click="outcome0" style="width: 20%; height: 2.5em;">支出</button>
+    <button class="add-tag" @click="outcome2" style="width: 20%; height: 2.5em;">下一天</button>
   </div>
   <div>
-    <button class="add-tag" @click="outcome1" style="width: 30%; height: 2.5em;">支出(前一天)</button>
-    <button class="add-tag" @click="outcome0" style="width: 30%; height: 2.5em;">支出</button>
-    <button class="add-tag" @click="outcome2" style="width: 30%; height: 2.5em;">支出(后一天)</button>
+    <span class="load-button" @click="loadlastRecords">加载最近20条记录</span>
   </div>
   <div>
-    <latestBills />
+    <recordDisplay
+      v-for="record in records"
+      :key="record.id"
+      :record="record"
+      :accounts="accounts"
+      :tags="tags"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, onBeforeUnmount } from 'vue';
+import { ref, onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
 import { authFetch } from '@/utils/authFetch';
-import latestBills from './latestBills.vue';
+import recordDisplay from './recordDisplay.vue'; // 引入新的recordDisplay组件
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL
 const accounts = ref<{ id: number; name: string }[]>([])
@@ -69,6 +82,7 @@ const selectedAccountId = ref<number | null>(null)
 
 const tags = ref<{ id: number; name: string; color: string }[]>([])
 const selectedTagId = ref<number | null>(null)
+const records = ref<{ id: number; account: number; tag: number; date: string; amount: number; name: string }[]>([])
 watch([tags, selectedTagId], ([newTags, newSelectedTagId]) => {
   if (newTags.length > 0 && (newSelectedTagId === null || newSelectedTagId === undefined)) {
     selectedTagId.value = newTags[0].id
@@ -84,7 +98,23 @@ const getTextColor = (bgColor: string) => {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000
   return brightness > 180 ? '#222' : '#fff'
 }
-
+const loadlastRecords = async () => {
+  const getLatestTen = (list: any[]) => list.slice().reverse().slice(0, 20);
+  try {
+    const response = await authFetch(`${baseUrl}/api/records`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`,
+      }
+    })
+    if (!response.ok) throw new Error('获取记录失败')
+    const data = await response.json()
+    records.value = getLatestTen(data);
+  } catch (e: any) {
+    alert(e.message || '获取记录失败')
+  }
+}
 const loadAccounts = async () => {
   try {
     const response = await authFetch(`${baseUrl}/api/accounts/`, {
@@ -184,15 +214,20 @@ const detailInfo = ref('')
 
 const amount = ref<number | null>(null)
 
+const amountInput = ref<HTMLInputElement | null>(null)
+
+// 修改income0和outcome0，在最后聚焦
 const income0 = () => {
   if (!selectedAccountId.value || !selectedTagId.value || selectedDate === null || amount.value === null) {
     alert('请先选择账户、标签、日期和输入金额')
+    nextTick(() => amountInput.value?.focus())
     return false
   } else if (amount.value <= 0) {
     alert('金额必须大于0')
+    nextTick(() => amountInput.value?.focus())
     return false
   }
-  const amount1 = amount.value * 100
+  const amount1 = Math.round(amount.value * 100)
   const data = {
     account: selectedAccountId.value,
     tag: selectedTagId.value,
@@ -212,8 +247,10 @@ const income0 = () => {
     const newRecord = await response.json()
     alert(`${newRecord.name}于${newRecord.date}收入${newRecord.amount / 100}元`)
     amount.value = null
+    nextTick(() => amountInput.value?.focus())
   }).catch((e: any) => {
     alert(e.message || '创建记录失败')
+    nextTick(() => amountInput.value?.focus())
   })
   return true
 }
@@ -235,12 +272,14 @@ const income2 = () => {
 const outcome0 = () => {
   if (!selectedAccountId.value || !selectedTagId.value || selectedDate === null || amount.value === null) {
     alert('请先选择账户、标签、日期和输入金额')
+    nextTick(() => amountInput.value?.focus())
     return false
   } else if (amount.value <= 0) {
     alert('金额必须大于0')
+    nextTick(() => amountInput.value?.focus())
     return false
   }
-  const amount1 = -amount.value * 100
+  const amount1 = Math.round(-amount.value * 100)
   const data = {
     account: selectedAccountId.value,
     tag: selectedTagId.value,
@@ -260,24 +299,28 @@ const outcome0 = () => {
     const newRecord = await response.json()
     alert(`${newRecord.name}于${newRecord.date}支出${-newRecord.amount / 100}元`)
     amount.value = null
+    nextTick(() => amountInput.value?.focus())
   }).catch((e: any) => {
     alert(e.message || '创建记录失败')
+    nextTick(() => amountInput.value?.focus())
   })
   return true
 }
 const outcome1 = () => {
-  if (!outcome0()) return
   const date = new Date(selectedDate.value)
   date.setDate(date.getDate() - 1)
   selectedDate.value = date.toISOString().split('T')[0]
   saveDate()
+  alert(`已切换到${selectedDate.value}，请继续输入支出记录`)
+  nextTick(() => amountInput.value?.focus())
 }
 const outcome2 = () => {
-  if (!outcome0()) return
   const date = new Date(selectedDate.value)
   date.setDate(date.getDate() + 1)
   selectedDate.value = date.toISOString().split('T')[0]
   saveDate()
+  alert(`已切换到${selectedDate.value}，请继续输入支出记录`)
+  nextTick(() => amountInput.value?.focus())
 }
 
 // 快捷键处理
@@ -286,6 +329,7 @@ let keyHandler: ((e: KeyboardEvent) => void) | null = null
 onMounted(async () => {
   await loadAccounts()
   await loadTag()
+  await loadlastRecords()
 
   keyHandler = (e: KeyboardEvent) => {
     if (e.ctrlKey && e.key === 'ArrowUp') {
@@ -295,18 +339,10 @@ onMounted(async () => {
       if (!outcome0()) return
     }
     if (e.ctrlKey && e.key === 'ArrowLeft') {
-      if (!outcome0()) return
-      const date = new Date(selectedDate.value)
-      date.setDate(date.getDate() - 1)
-      selectedDate.value = date.toISOString().split('T')[0]
-      saveDate()
+      outcome1()
     }
     if (e.ctrlKey && e.key === 'ArrowRight') {
-      if (!outcome0()) return
-      const date = new Date(selectedDate.value)
-      date.setDate(date.getDate() + 1)
-      selectedDate.value = date.toISOString().split('T')[0]
-      saveDate()
+      outcome2()
     }
   }
   window.addEventListener('keydown', keyHandler)

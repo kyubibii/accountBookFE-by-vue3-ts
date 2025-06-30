@@ -5,20 +5,20 @@
       <input v-model="keyword" type="text" placeholder="请输入关键词搜索"
         style="padding: 6px 12px; border-radius: 4px; border: 1px solid;background-color: rgba(255,255,255,0.2);border-color: '#00796b';color:'#00796b';" />
       <button :style="{
-          border: '2px solid #ccc',
-          borderRadius: '4px',
-          padding: '4px 12px',
-          cursor: 'pointer',
-          background: 'rgba(0,0,0,0)',
-          borderColor: '#00796b',
-          color: '#00796b',
-          fontWeight: 'bold'
-        }" @click="() => {
+        border: '2px solid #ccc',
+        borderRadius: '4px',
+        padding: '4px 12px',
+        cursor: 'pointer',
+        background: 'rgba(0,0,0,0)',
+        borderColor: '#00796b',
+        color: '#00796b',
+        fontWeight: 'bold'
+      }" @click="() => {
           keyword = ''
         }">
-          清空
-        </button>
-      </div>
+        清空
+      </button>
+    </div>
     <div>
       <label style="font-weight: bold;">账户：</label>
       <div style="display: flex; flex-wrap: wrap; gap: 8px;">
@@ -174,36 +174,34 @@
         <input v-model.number="maxAmount" type="number" placeholder="最大金额" step="0.01" min="0"
           style="padding: 6px 12px; border-radius: 4px; border: 1px solid; background-color: rgba(255,255,255,0.2); color: '#00796b';" />
         <button :style="{
-            border: '2px solid',
-            borderRadius: '4px',
-            padding: '4px 12px',
-            cursor: 'pointer',
-            background: 'rgba(0,0,0,0)',
-            borderColor: '#00796b',
-            color: '#00796b',
-            fontWeight: 'bold'
-          }" @click="() => {
-            minAmount = 0
-            maxAmount = Infinity
-          }">
-            清空
-          </button>
-      </div>
-    </div>
-    <div style="margin-top: 4px;margin-bottom: 4px;">
-      <button
-        :style="{
           border: '2px solid',
           borderRadius: '4px',
           padding: '4px 12px',
           cursor: 'pointer',
           background: 'rgba(0,0,0,0)',
-          borderColor: '#d32f2f',
-          color: '#d32f2f',
-          fontWeight: 'bold',
-          marginRight: '12px'
-        }"
-        @click="() => {
+          borderColor: '#00796b',
+          color: '#00796b',
+          fontWeight: 'bold'
+        }" @click="() => {
+            minAmount = 0
+            maxAmount = Infinity
+          }">
+          清空
+        </button>
+      </div>
+    </div>
+    <div style="margin-top: 4px;margin-bottom: 4px;">
+      <button :style="{
+        border: '2px solid',
+        borderRadius: '4px',
+        padding: '4px 12px',
+        cursor: 'pointer',
+        background: 'rgba(0,0,0,0)',
+        borderColor: '#d32f2f',
+        color: '#d32f2f',
+        fontWeight: 'bold',
+        marginRight: '12px'
+      }" @click="() => {
           keyword = ''
           selectedAccounts = []
           selectedTags = []
@@ -213,57 +211,43 @@
           billType = ''
           minAmount = 0
           maxAmount = Infinity
-        }"
-      >
+        }">
         清空所有筛选条件
       </button>
-      <button
-        :style="{
-          border: '2px solid',
-          borderRadius: '4px',
-          padding: '4px 12px',
-          cursor: 'pointer',
-          background: '#00796b',
-          borderColor: '#00796b',
-          color: '#fff',
-          fontWeight: 'bold'
-        }"
-        @click="searchRecords"
-      >
+      <button :style="{
+        border: '2px solid',
+        borderRadius: '4px',
+        padding: '4px 12px',
+        cursor: 'pointer',
+        background: '#00796b',
+        borderColor: '#00796b',
+        color: '#fff',
+        fontWeight: 'bold'
+      }" @click="searchRecords">
         查询
       </button>
     </div>
     <div>
-      <div v-for="record in [...(recordsDisplay.length > 0 ? recordsDisplay : records)]
-        .sort((a, b) => {
-          if (a.date !== b.date) {
-        return b.date.localeCompare(a.date)
-          }
-          return b.id - a.id
-        })"
-        :key="record.id">
-        <span>
-          {{ record.date }} |
-        </span>
-        <span>
-          {{ record.name }} |
-        </span>
-        <span>
-          {{ record.amount / 100 }}元 |
-        </span>
-        <span>
-          {{ accounts.find(account => account.id === record.account)?.name || '未知账户' }} |
-        </span>
-        <span>
-          {{ tags.find(tag => tag.id === record.tag)?.name || '无标签' }}
-        </span>
-      </div>
+      <recordDisplay
+        v-for="record in [...(recordsDisplay.length > 0 ? recordsDisplay : records)]
+          .sort((a, b) => {
+            if (a.date !== b.date) {
+              return b.date.localeCompare(a.date)
+            }
+            return b.id - a.id
+          })"
+        :key="record.id"
+        :record="record"
+        :accounts="accounts"
+        :tags="tags"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import recordDisplay from './recordDisplay.vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { authFetch } from '@/utils/authFetch'
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL
@@ -279,6 +263,7 @@ const startDate = ref('')
 const endDate = ref('')
 const minAmount = ref(0)
 const maxAmount = ref(Infinity)
+let keyHandler: ((e: KeyboardEvent) => void) | null = null
 
 // 账单类型：'positive' | 'negative' | ''
 const billType = ref('')
@@ -336,15 +321,14 @@ const loadRecords = async () => {
   }
 }
 const searchRecords = async () => {
-  loadRecords()
   const qpGenerator = () => {
     const params: Record<string, string | string[]> = {}
     if (keyword.value) params.keyword = keyword.value
     if (selectedDate.value) params.date = selectedDate.value
     if (startDate.value) params.start_date = startDate.value
     if (endDate.value) params.end_date = endDate.value
-    if (minAmount.value > 0) params.min_amount = (minAmount.value*100).toString()
-    if (maxAmount.value < Infinity) params.max_amount = (maxAmount.value*100).toString()
+    if (minAmount.value > 0) params.min_amount = (minAmount.value * 100).toString()
+    if (maxAmount.value < Infinity) params.max_amount = (maxAmount.value * 100).toString()
     if (billType.value) params.amount_type = billType.value
     // 多个 tag/account 用多个同名参数
     if (selectedTags.value.length > 0) params.tag = selectedTags.value.map(String)
@@ -362,16 +346,16 @@ const searchRecords = async () => {
   }
   try {
     const response = await authFetch(`${baseUrl}/api/records/search/?${qpGenerator()}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`,
-    }
-  })
-  if (!response.ok) throw new Error('查询记录失败')
-  const data = await response.json()
-  recordsDisplay.value = data
-} catch (e: any) {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`,
+      }
+    })
+    if (!response.ok) throw new Error('查询记录失败')
+    const data = await response.json()
+    recordsDisplay.value = data
+  } catch (e: any) {
     alert(e.message || '查询记录失败')
   }
   // 如果没有查询结果，显示所有记录
@@ -408,6 +392,30 @@ onMounted(() => {
   loadAccounts()
   loadTag()
   loadRecords()
+
+  keyHandler = (e: KeyboardEvent) => {
+    if (e.ctrlKey && e.key === 'enter') {
+      searchRecords()
+    } else if (e.ctrlKey && e.key === 'Escape') {
+      keyword.value = ''
+      selectedAccounts.value = []
+      selectedTags.value = []
+      selectedDate.value = ''
+      startDate.value = ''
+      endDate.value = ''
+      billType.value = ''
+      minAmount.value = 0
+      maxAmount.value = Infinity
+    }
+  }
+  window.addEventListener('keydown', keyHandler)
+})
+
+onBeforeUnmount(() => {
+  if (keyHandler) {
+    window.removeEventListener('keydown', keyHandler)
+    keyHandler = null
+  }
 })
 </script>
 
